@@ -1,18 +1,7 @@
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
-import pandas as pd
-
 # load the .env file variables
-load_dotenv()
-
-
-def db_connect():
-    import os
-    engine = create_engine(os.getenv('DATABASE_URL'))
-    engine.connect()
-    return engine
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
 
 def load_diabetes_data(url="https://raw.githubusercontent.com/4GeeksAcademy/decision-tree-project-tutorial/main/diabetes.csv"):
     """
@@ -35,18 +24,13 @@ def preprocess_diabetes_data(df):
     if df is None:
         return None
 
-    # Columns where 0 typically represents a missing value in this dataset
     cols_with_zeros_as_nan = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
-
-    # Create a copy to avoid SettingWithCopyWarning
     df_processed = df.copy()
 
-    # Replace 0s with NaN
     for col in cols_with_zeros_as_nan:
         if col in df_processed.columns:
             df_processed[col] = df_processed[col].replace(0, pd.NA)
 
-    # Impute NaNs with the median
     for col in cols_with_zeros_as_nan:
         if col in df_processed.columns and df_processed[col].isnull().any():
             median_val = df_processed[col].median()

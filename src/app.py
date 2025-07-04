@@ -1,6 +1,3 @@
-from utils import db_connect
-engine = db_connect()
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -9,8 +6,6 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.model_selection import GridSearchCV
 import joblib
 import os
-
-# Import functions from your utils.py
 from src.utils import load_diabetes_data, preprocess_diabetes_data, split_features_target, split_train_test
 
 def perform_eda(df):
@@ -29,11 +24,10 @@ def perform_eda(df):
     plt.figure(figsize=(12, 6))
     sns.countplot(x='Outcome', data=df)
     plt.title('Distribution of Outcome Variable')
-    plt.savefig('data/processed/outcome_distribution.png') # Save plot to processed data folder
-    plt.close() # Close plot to prevent display in non-notebook environments
+    plt.savefig('data/processed/outcome_distribution.png')
+    plt.close()
     print("EDA plots saved to data/processed/")
     print("--- EDA Summary Complete ---")
-
 
 def train_and_evaluate_tree(X_train, y_train, X_test, y_test, criterion='gini', model_name="Decision Tree"):
     """
@@ -53,14 +47,6 @@ def train_and_evaluate_tree(X_train, y_train, X_test, y_test, criterion='gini', 
     print(report)
     print("Confusion Matrix:")
     print(conf_matrix)
-
-    # Optional: Save tree plot (can be very large for deep trees)
-    # plt.figure(figsize=(20, 10))
-    # plot_tree(model, feature_names=X_train.columns.tolist(), class_names=['No Diabetes', 'Diabetes'], filled=True, rounded=True)
-    # plt.title(f"{model_name} ({criterion.capitalize()} Impurity)")
-    # plt.savefig(f'models/{model_name.lower().replace(" ", "_")}_{criterion}_tree.png')
-    # plt.close()
-
     return model, accuracy, report, conf_matrix
 
 def optimize_decision_tree(X_train, y_train, criterion='entropy'):
@@ -70,9 +56,8 @@ def optimize_decision_tree(X_train, y_train, criterion='entropy'):
     print(f"\n--- Optimizing Decision Tree with {criterion.capitalize()} Impurity using GridSearchCV ---")
     dt_base = DecisionTreeClassifier(criterion=criterion, random_state=42)
 
-    # Define the parameter grid (based on previous analysis, a max_depth of 3 was found)
     param_grid = {
-        'max_depth': [3, 4, 5, 7], # Focusing around the previous best and slightly more
+        'max_depth': [3, 4, 5, 7],
         'min_samples_split': [2, 5, 10],
         'min_samples_leaf': [1, 2, 4],
         'max_features': [None, 'sqrt', 'log2'],
@@ -125,37 +110,27 @@ if __name__ == "__main__":
     if processed_df is None:
         exit("Failed to preprocess data. Exiting.")
 
-    # Optionally save the processed data to data/processed/
-    # Ensure data/processed directory exists
     os.makedirs('data/processed', exist_ok=True)
     processed_df.to_csv('data/processed/diabetes_processed.csv', index=False)
     print("Processed data saved to data/processed/diabetes_processed.csv")
 
-    # Perform a brief EDA summary (full EDA done in explore.ipynb)
     perform_eda(processed_df)
 
-    # Split data into features (X) and target (y)
     X, y = split_features_target(processed_df, target_column='Outcome')
     if X is None:
         exit("Failed to split features and target. Exiting.")
 
-    # Split into train and test sets
     X_train, X_test, y_train, y_test = split_train_test(X, y, stratify=y)
     if X_train is None:
         exit("Failed to split train and test data. Exiting.")
 
     # Step 3: Build and analyze decision trees (unoptimized)
-    # Gini Impurity
     _, _, _, _ = train_and_evaluate_tree(X_train, y_train, X_test, y_test, criterion='gini', model_name="Decision Tree (Unoptimized Gini)")
-
-    # Entropy (Information Gain)
     _, _, _, _ = train_and_evaluate_tree(X_train, y_train, X_test, y_test, criterion='entropy', model_name="Decision Tree (Unoptimized Entropy)")
-
 
     # Step 4: Optimize the model (using Entropy as it showed slightly better recall for Class 1)
     best_dt_model = optimize_decision_tree(X_train, y_train, criterion='entropy')
 
-    # Evaluate the optimized model on the test set
     print("\n--- Evaluation of Optimized Decision Tree Model ---")
     y_pred_optimized = best_dt_model.predict(X_test)
 
@@ -165,7 +140,6 @@ if __name__ == "__main__":
     print("Confusion Matrix:")
     print(confusion_matrix(y_test, y_pred_optimized))
 
-    # Plot the optimized tree
     plot_optimized_tree(best_dt_model, X.columns.tolist(), ['No Diabetes', 'Diabetes'])
 
     # Step 5: Save the model
